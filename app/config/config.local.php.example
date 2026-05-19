@@ -1,0 +1,24 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'app' => [
+        'name' => 'Carceris',
+        'tagline' => 'Secure daily logging for correctional facilities.',
+        'version' => '0.6.11',
+        'timezone' => 'America/Indiana/Indianapolis',
+        'session_name' => 'carceris_session',
+        'environment_mode' => 'production',
+        'debug' => false,
+        'force_https' => true,
+    ],
+    'database' => [
+        'host' => '127.0.0.1',
+        'port' => 3306,
+        'name' => 'carceris',
+        'user' => 'carceris_user',
+        'pass' => 'change_this_to_a_strong_password',
+        'charset' => 'utf8mb4',
+    ],
+];

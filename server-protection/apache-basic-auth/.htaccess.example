@@ -1,0 +1,7 @@
+# Optional Apache Basic Auth protection for Carceris.
+# Copy this block into your active .htaccess only after adjusting AuthUserFile.
+
+AuthType Basic
+AuthName "Protected Carceris"
+AuthUserFile /full/server/path/outside-webroot/.htpasswd
+Require valid-user

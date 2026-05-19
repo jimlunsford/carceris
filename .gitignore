@@ -1,0 +1,35 @@
+# Local configuration and secrets
+/app/config/config.local.php
+*.local.php
+.env
+.env.*
+
+# Runtime state
+/storage/*
+!/storage/.htaccess
+!/storage/.gitkeep
+
+# Backups, exports, and uploaded upgrade packages
+/backups/
+/exports/
+/upgrade-uploads/
+*.sql
+*.sql.gz
+*.zip
+*.tar
+*.tar.gz
+
+# Composer/vendor dependencies
+/vendor/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*

@@ -1,0 +1,12 @@
+{
+  "name": "carceris/carceris",
+  "description": "Secure daily logging for correctional facilities.",
+  "type": "project",
+  "license": "AGPL-3.0-only",
+  "require": {
+    "php": ">=8.1"
+  },
+  "suggest": {
+    "phpmailer/phpmailer": "Optional proven SMTP mailer layer for sites that want a mature mail delivery library instead of the native Carceris SMTP fallback."
+  }
+}
