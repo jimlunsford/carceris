@@ -28,7 +28,8 @@ try {
     echo "Carceris scheduled daily report skipped.\n";
     echo "Reason: " . ($result['reason'] ?? 'Unknown') . "\n";
 } catch (Throwable $exception) {
+    error_log('Carceris scheduled daily report failed: ' . $exception->getMessage());
+
     http_response_code(500);
-    echo "Carceris scheduled daily report failed.\n";
-    echo "Error: " . $exception->getMessage() . "\n";
+    echo "Carceris scheduled daily report failed. Check the Carceris audit log or server error log for details.\n";
 }

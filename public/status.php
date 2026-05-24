@@ -21,6 +21,7 @@ $zipAvailable = carceris_zip_available();
 $securityChecks = carceris_security_status_checks();
 $upgradeFailure = carceris_upgrade_failure_status();
 $productionReadiness = ['checks' => [], 'failed' => [], 'ready' => false];
+$mailCapabilities = carceris_mail_capabilities();
 
 try {
     carceris_ensure_schema_migrations_table();
@@ -30,6 +31,16 @@ try {
 }
 
 $productionReadiness = carceris_production_readiness_checks($securityChecks, $httpsEnabled, $databaseStatus, $statusMigrationSummary);
+
+try {
+    $schemaHealth = carceris_schema_health_check();
+} catch (Throwable $exception) {
+    $schemaHealth = [
+        'ok' => false,
+        'missing_tables' => [],
+        'missing_columns' => ['Schema health unavailable: ' . $exception->getMessage()],
+    ];
+}
 
 audit_event(
     'status_viewed',

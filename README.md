@@ -6,11 +6,11 @@ Carceris is a self-hosted PHP and MariaDB daily activity log system built for in
 
 ## Version
 
-Carceris v0.6.11
+Carceris v0.6.14
 
 ## Current Status
 
-Carceris v0.6.11 is an open-source release candidate for internal facility deployment.
+Carceris v0.6.14 is an open-source release candidate for internal facility deployment.
 
 It is suitable for controlled internal pilot testing and internal production-readiness evaluation. Public internet exposure is **not recommended** without additional hardening, access controls, and independent security review.
 
@@ -196,6 +196,21 @@ The included `.gitignore` is intended to help keep those files out of the reposi
 Recommended public positioning:
 
 ```text
-Carceris v0.6.11
+Carceris v0.6.14
 Open-source release candidate for internal correctional facility daily logging.
 ```
+
+
+## Documentation Map
+
+- `INSTALL.md`, installation and first setup
+- `UPGRADE.md`, upgrade workflow and preserved data
+- `ADMIN-GUIDE.md`, admin workflow
+- `SECURITY.md`, deployment and data-protection notes
+- `PRODUCTION-CHECKLIST.md`, production readiness checks
+- `BACKUP-RESTORE.md`, backup and restore handling
+- `CHANGELOG.md`, release history
+
+Carceris uses fixed core templates in `app/views`. It does not have a public theme system. That is intentional because this is operational recordkeeping software, not a CMS.
+
+Daily log completion is time-window based. A completed log means the operational period has passed. The `log_days.status` field is reserved for future close/finalize workflows.

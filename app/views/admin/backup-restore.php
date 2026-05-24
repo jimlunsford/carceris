@@ -10,8 +10,8 @@
 
 <section class="panel panel-danger">
     <h2>Read This First</h2>
-    <p>Backup files contain sensitive operational data, users, audit records, settings, and configuration details. Store them securely.</p>
-    <p>Restore is destructive. It imports the backup database and replaces the current database state. Carceris creates a pre-restore safety backup first, but you should still have an external backup before restoring.</p>
+    <p>Backup files contain sensitive operational data, users, audit records, settings, configuration details, and any saved SMTP password. Store them securely and do not email or upload them to unapproved systems.</p>
+    <p>Restore is destructive. It imports the backup database and replaces the current database state. Only restore backup ZIP files from a trusted Carceris installation. Carceris creates a pre-restore safety backup first, but you should still have an external backup before restoring.</p>
 </section>
 
 <section class="panel">
@@ -44,7 +44,7 @@
 
         <label class="checkbox-row">
             <input type="checkbox" name="backup_acknowledgement" value="1" required>
-            <span>I understand this backup contains sensitive operational and configuration data.</span>
+            <span>I understand this backup contains sensitive operational data, configuration data, and possible saved mail credentials.</span>
         </label>
 
         <div class="form-actions">
@@ -78,7 +78,7 @@
 
         <label class="checkbox-row">
             <input type="checkbox" name="restore_acknowledgement" value="1" required>
-            <span>I understand this will replace the current Carceris database state.</span>
+            <span>I understand this will replace the current Carceris database state and I trust this backup source.</span>
         </label>
 
         <div class="form-actions">

@@ -21,6 +21,11 @@ if ($date !== '') {
         exit('Log not found.');
     }
 } else {
+    if (!user_can($user, 'view_active_log')) {
+        http_response_code(403);
+        exit('You do not have permission to print the live Active Log. Choose a completed log from the Archive.');
+    }
+
     $logDay = get_or_create_current_log_day((int) $user['id']);
 }
 

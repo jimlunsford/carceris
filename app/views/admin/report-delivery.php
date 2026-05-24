@@ -177,6 +177,34 @@
 
 
 <section class="panel">
+    <h2>Mail Transport Availability</h2>
+    <div class="status-list">
+        <div class="status-list-row">
+            <span>PHP mail()</span>
+            <strong class="<?= $mailCapabilities['php_mail'] ? 'status-good' : 'status-bad' ?>"><?= $mailCapabilities['php_mail'] ? 'Available' : 'Unavailable' ?></strong>
+        </div>
+        <div class="status-list-row">
+            <span>Native SMTP socket support</span>
+            <strong class="<?= $mailCapabilities['native_smtp'] ? 'status-good' : 'status-bad' ?>"><?= $mailCapabilities['native_smtp'] ? 'Available' : 'Unavailable' ?></strong>
+        </div>
+        <div class="status-list-row">
+            <span>PHPMailer library</span>
+            <strong class="<?= $mailCapabilities['phpmailer'] ? 'status-good' : 'status-warn' ?>"><?= $mailCapabilities['phpmailer'] ? 'Installed' : 'Not installed' ?></strong>
+        </div>
+        <div class="status-list-row">
+            <span>Sendmail process support</span>
+            <strong class="<?= ($mailCapabilities['sendmail_proc_open'] && $mailCapabilities['sendmail_path_executable']) ? 'status-good' : 'status-bad' ?>">
+                <?= ($mailCapabilities['sendmail_proc_open'] && $mailCapabilities['sendmail_path_executable']) ? 'Available' : 'Unavailable' ?>
+            </strong>
+        </div>
+    </div>
+
+    <?php if (!$selectedTransportAvailable && $selectedTransport !== 'manual_only'): ?>
+        <p class="flash flash--warning"><?= e($selectedTransportWarning) ?></p>
+    <?php endif; ?>
+</section>
+
+<section class="panel">
     <div class="panel-header">
         <div>
             <h2>Test Email</h2>
@@ -193,7 +221,7 @@
             <input type="email" name="test_recipient" placeholder="Leave blank to use the To recipients above">
         </label>
 
-        <button type="submit">Send Test Email</button>
+        <button type="submit" <?= (!$selectedTransportAvailable || $selectedTransport === 'manual_only') ? 'disabled' : '' ?>>Send Test Email</button>
     </form>
 </section>
 

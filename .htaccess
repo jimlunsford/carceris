@@ -9,7 +9,7 @@ Options -Indexes
     </IfModule>
 </FilesMatch>
 
-<FilesMatch "^(composer\.(json|lock)|README\.md|RELEASE_NOTES\.md|SECURITY\.md|CONTRIBUTING\.md|INSTALL\.md|UPGRADE\.md|BACKUP-RESTORE\.md|DEPLOYMENT\.md|ROLE-PERMISSIONS\.md|ADMIN-GUIDE\.md|PRODUCTION-CHECKLIST\.md|TESTING\.md|NOTICE|COPYING|LICENSE|VERSION)$">
+<FilesMatch "^(composer\.(json|lock)|README\.md|RELEASE_NOTES\.md|CHANGELOG\.md|RELEASE_MANIFEST\.json|SECURITY\.md|CONTRIBUTING\.md|INSTALL\.md|UPGRADE\.md|BACKUP-RESTORE\.md|DEPLOYMENT\.md|ROLE-PERMISSIONS\.md|ADMIN-GUIDE\.md|PRODUCTION-CHECKLIST\.md|TESTING\.md|NOTICE|COPYING|LICENSE|VERSION)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

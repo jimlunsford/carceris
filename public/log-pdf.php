@@ -13,6 +13,11 @@ if (!user_can($user, 'print_log')) {
 
 $date = get_string('date', 10);
 
+if ($date === '' && !user_can($user, 'view_active_log')) {
+    http_response_code(403);
+    exit('You do not have permission to download the active log PDF.');
+}
+
 if ($date !== '') {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
         http_response_code(400);

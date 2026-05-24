@@ -21,9 +21,14 @@ $appTagline = carceris_header_brand_tagline();
 
     <?php if ($user): ?>
         <nav class="site-nav" aria-label="Main navigation">
-            <a href="/index.php">Active Log</a>
+            <?php if (user_can($user, 'view_active_log')): ?>
+                <a href="/index.php">Active Log</a>
+            <?php endif; ?>
             <a href="/archive.php">Archive</a>
-            <a href="/print.php" target="_blank" rel="noopener">Print</a>
+            <a href="/account.php">Account</a>
+            <?php if (user_can($user, 'view_active_log')): ?>
+                <a href="/print.php" target="_blank" rel="noopener">Print</a>
+            <?php endif; ?>
             <?php if (user_can($user, 'manage_users') || user_can($user, 'manage_settings') || user_can($user, 'view_audit') || user_can($user, 'manage_upgrades') || user_can($user, 'manage_backups') || user_can($user, 'view_status') || user_can($user, 'view_reports') || user_can($user, 'send_reports')): ?>
                 <a href="/admin/index.php">Admin</a>
             <?php endif; ?>

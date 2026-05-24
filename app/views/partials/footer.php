@@ -7,10 +7,10 @@
         </div>
 
         <div class="site-footer__version">
-            <span>Version <?= e(app_config('app', 'version', '0.6.11')) ?></span>
+            <span>Version <?= e(app_config('app', 'version', '0.6.14')) ?></span>
             <span>Licensed under AGPLv3</span>
         </div>
     </footer>
-    <script src="/assets/js/app.js?v=<?= e(app_config('app', 'version', '0.6.11')) ?>" defer></script>
+    <script src="/assets/js/app.js?v=<?= e(app_config('app', 'version', '0.6.14')) ?>" defer></script>
 </body>
 </html>

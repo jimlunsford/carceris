@@ -419,6 +419,28 @@ function carceris_split_sql(string $sql): array
     return $statements;
 }
 
+function carceris_execute_migration_statement(string $statement): void
+{
+    $trimmed = ltrim($statement);
+
+    if ($trimmed === '') {
+        return;
+    }
+
+    if (preg_match('/^(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN)\b/i', $trimmed)) {
+        $stmt = db()->query($statement);
+
+        if ($stmt instanceof PDOStatement) {
+            $stmt->fetchAll();
+            $stmt->closeCursor();
+        }
+
+        return;
+    }
+
+    db()->exec($statement);
+}
+
 function carceris_run_sql_file(string $path): void
 {
     $sql = file_get_contents($path);
@@ -428,7 +450,7 @@ function carceris_run_sql_file(string $path): void
     }
 
     foreach (carceris_split_sql($sql) as $statement) {
-        db()->exec($statement);
+        carceris_execute_migration_statement($statement);
     }
 }
 
@@ -541,6 +563,153 @@ function carceris_migration_summary(): array
     ];
 }
 
+
+function carceris_required_schema_definition(): array
+{
+    return [
+        'users' => ['id', 'username', 'password_hash', 'display_name', 'role', 'is_active', 'last_login_at', 'created_at', 'updated_at'],
+        'log_days' => ['id', 'log_label', 'operational_date', 'start_time', 'end_time', 'status', 'opened_by', 'closed_by', 'opened_at', 'closed_at', 'created_at'],
+        'log_entries' => ['id', 'log_day_id', 'event_time', 'category', 'location', 'inmate_name', 'entry_text', 'priority', 'is_late_entry', 'late_entry_reason', 'status', 'parent_entry_id', 'correction_reason', 'corrected_by', 'corrected_at', 'created_by', 'created_at', 'updated_at', 'is_voided', 'void_reason', 'voided_by', 'voided_at'],
+        'log_entry_revisions' => ['id', 'log_entry_id', 'old_event_time', 'new_event_time', 'old_category', 'new_category', 'old_location', 'new_location', 'old_inmate_name', 'new_inmate_name', 'old_entry_text', 'new_entry_text', 'correction_reason', 'corrected_by', 'corrected_at'],
+        'settings' => ['id', 'setting_key', 'setting_value', 'created_at', 'updated_at'],
+        'categories' => ['id', 'name', 'sort_order', 'is_active', 'created_at'],
+        'login_attempts' => ['id', 'username', 'subject_hash', 'user_id', 'ip_address', 'user_agent', 'was_successful', 'failure_reason', 'attempted_at'],
+        'audit_events' => ['id', 'event_type', 'user_id', 'username', 'ip_address', 'user_agent', 'details', 'related_type', 'related_id', 'created_at'],
+        'schema_migrations' => ['id', 'version', 'migration_file', 'checksum', 'executed_by', 'executed_at', 'status'],
+        'report_deliveries' => ['id', 'log_day_id', 'delivery_type', 'transport', 'body_format', 'attachment_format', 'recipient_to', 'recipient_cc', 'recipient_bcc', 'subject', 'status', 'error_message', 'sent_at', 'triggered_by', 'created_at'],
+        'log_entry_actions' => ['id', 'log_entry_id', 'replacement_entry_id', 'action_type', 'reason', 'entry_snapshot', 'performed_by', 'performed_at'],
+        'report_email_deliveries' => ['id', 'legacy_report_delivery_id', 'log_day_id', 'delivery_type', 'transport', 'body_format', 'attachment_format', 'recipient_to', 'recipient_cc', 'recipient_bcc', 'subject', 'status', 'error_message', 'sent_at', 'triggered_by', 'created_at'],
+        'report_test_emails' => ['id', 'legacy_report_delivery_id', 'transport', 'body_format', 'recipient_to', 'recipient_cc', 'recipient_bcc', 'subject', 'status', 'error_message', 'sent_at', 'triggered_by', 'created_at'],
+        'report_downloads' => ['id', 'legacy_report_delivery_id', 'log_day_id', 'body_format', 'attachment_format', 'subject', 'status', 'triggered_by', 'created_at'],
+    ];
+}
+
+function carceris_schema_health_check(): array
+{
+    $missingTables = [];
+    $missingColumns = [];
+
+    foreach (carceris_required_schema_definition() as $table => $columns) {
+        if (!carceris_schema_table_exists($table)) {
+            $missingTables[] = $table;
+            continue;
+        }
+
+        foreach ($columns as $column) {
+            if (!carceris_schema_column_exists($table, $column)) {
+                $missingColumns[] = $table . '.' . $column;
+            }
+        }
+    }
+
+    return [
+        'ok' => count($missingTables) === 0 && count($missingColumns) === 0,
+        'missing_tables' => $missingTables,
+        'missing_columns' => $missingColumns,
+    ];
+}
+
+function carceris_validate_release_manifest(ZipArchive $zip, string $root, string $version): array
+{
+    $manifestPath = carceris_package_path($root, 'RELEASE_MANIFEST.json');
+    $raw = $zip->getFromName($manifestPath);
+
+    if ($raw === false) {
+        throw new RuntimeException('The uploaded ZIP is missing required file: RELEASE_MANIFEST.json');
+    }
+
+    $manifest = json_decode((string) $raw, true);
+
+    if (!is_array($manifest)) {
+        throw new RuntimeException('RELEASE_MANIFEST.json is not valid JSON.');
+    }
+
+    if (($manifest['version'] ?? '') !== $version) {
+        throw new RuntimeException('Release manifest version does not match VERSION.');
+    }
+
+    if (($manifest['license'] ?? '') !== 'AGPL-3.0-only') {
+        throw new RuntimeException('Release manifest license must be AGPL-3.0-only.');
+    }
+
+    $files = $manifest['files'] ?? null;
+
+    if (!is_array($files) || !$files) {
+        throw new RuntimeException('Release manifest does not contain a file list.');
+    }
+
+    $allowedFiles = [];
+
+    foreach ($files as $file) {
+        if (!is_array($file)) {
+            throw new RuntimeException('Release manifest contains an invalid file entry.');
+        }
+
+        $path = str_replace('\\', '/', (string) ($file['path'] ?? ''));
+        $hash = (string) ($file['sha256'] ?? '');
+
+        if ($path === '' || str_starts_with($path, '/') || preg_match('#(^|/)\.\.(/|$)#', $path)) {
+            throw new RuntimeException('Release manifest contains an unsafe or empty file path.');
+        }
+
+        if ($path === 'RELEASE_MANIFEST.json') {
+            continue;
+        }
+
+        if (!preg_match('/^[a-f0-9]{64}$/', $hash)) {
+            throw new RuntimeException('Release manifest contains an invalid SHA-256 hash for: ' . $path);
+        }
+
+        if (isset($allowedFiles[$path])) {
+            throw new RuntimeException('Release manifest contains a duplicate file entry: ' . $path);
+        }
+
+        $content = $zip->getFromName(carceris_package_path($root, $path));
+
+        if ($content === false) {
+            throw new RuntimeException('Release manifest lists missing file: ' . $path);
+        }
+
+        if (hash('sha256', $content) !== $hash) {
+            throw new RuntimeException('Release manifest hash mismatch for: ' . $path);
+        }
+
+        $allowedFiles[$path] = true;
+    }
+
+    $manifestSelfPath = carceris_package_path($root, 'RELEASE_MANIFEST.json');
+
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $entry = str_replace('\\', '/', $zip->getNameIndex($i));
+
+        if ($entry === '' || str_ends_with($entry, '/')) {
+            continue;
+        }
+
+        if ($entry === $manifestSelfPath) {
+            continue;
+        }
+
+        if ($root !== '') {
+            $rootPrefix = rtrim($root, '/') . '/';
+
+            if (!str_starts_with($entry, $rootPrefix)) {
+                throw new RuntimeException('The uploaded ZIP contains a file outside the package root: ' . $entry);
+            }
+
+            $relative = substr($entry, strlen($rootPrefix));
+        } else {
+            $relative = $entry;
+        }
+
+        if (!isset($allowedFiles[$relative])) {
+            throw new RuntimeException('The uploaded ZIP contains a file not listed in RELEASE_MANIFEST.json: ' . $relative);
+        }
+    }
+
+    return $manifest;
+}
+
 function carceris_zip_available(): bool
 {
     return class_exists('ZipArchive');
@@ -627,6 +796,8 @@ function carceris_validate_upgrade_zip(string $zipPath): array
             'VERSION',
             'README.md',
             'RELEASE_NOTES.md',
+            'CHANGELOG.md',
+            'RELEASE_MANIFEST.json',
             'app/bootstrap.php',
             'app/config/config.php',
             'public/index.php',
@@ -663,6 +834,8 @@ function carceris_validate_upgrade_zip(string $zipPath): array
             }
         }
 
+        $manifest = carceris_validate_release_manifest($zip, $root, $version);
+
         $currentVersion = carceris_current_version();
 
         if (version_compare($version, $currentVersion, '<=')) {
@@ -673,6 +846,7 @@ function carceris_validate_upgrade_zip(string $zipPath): array
             'version' => $version,
             'root' => $root,
             'current_version' => $currentVersion,
+            'manifest' => $manifest,
         ];
     } finally {
         $zip->close();
@@ -795,6 +969,47 @@ function carceris_copy_upgrade_files(string $sourceRoot, string $destinationRoot
     }
 }
 
+
+function carceris_removed_upgrade_paths(string $targetVersion): array
+{
+    $removed = [];
+
+    if (version_compare($targetVersion, '0.6.13', '>=')) {
+        $removed[] = 'database/migrations/0.3.2-remove-maintenance-notes.sql';
+    }
+
+    return $removed;
+}
+
+function carceris_remove_stale_upgrade_files(string $destinationRoot, string $targetVersion): array
+{
+    $removed = [];
+
+    foreach (carceris_removed_upgrade_paths($targetVersion) as $relative) {
+        $relative = str_replace('\\', '/', trim($relative, '/'));
+
+        if ($relative === '' || str_starts_with($relative, '/') || preg_match('#(^|/)\.\.(/|$)#', $relative)) {
+            continue;
+        }
+
+        if (carceris_should_skip_upgrade_copy($relative)) {
+            continue;
+        }
+
+        $path = rtrim($destinationRoot, '/') . '/' . $relative;
+
+        if (is_file($path) || is_link($path)) {
+            if (!unlink($path)) {
+                throw new RuntimeException('Could not remove stale upgrade file: ' . $relative);
+            }
+
+            $removed[] = $relative;
+        }
+    }
+
+    return $removed;
+}
+
 function carceris_cleanup_old_upgrade_dirs(int $keep = 3): void
 {
     $dir = carceris_upgrade_storage_dir();
@@ -880,8 +1095,14 @@ function carceris_perform_upgrade(array $upload, array $adminUser): array
         }
 
         carceris_copy_upgrade_files($sourceRoot, carceris_project_root());
+        $removedFiles = carceris_remove_stale_upgrade_files(carceris_project_root(), $package['version']);
 
         $ranMigrations = carceris_run_pending_migrations((int) $adminUser['id']);
+        $schemaHealth = carceris_schema_health_check();
+
+        if (!$schemaHealth['ok']) {
+            throw new RuntimeException('Schema health check failed after upgrade. Missing tables: ' . implode(', ', $schemaHealth['missing_tables']) . '. Missing columns: ' . implode(', ', $schemaHealth['missing_columns']) . '.');
+        }
 
         carceris_clear_upgrade_failure();
 
@@ -889,7 +1110,7 @@ function carceris_perform_upgrade(array $upload, array $adminUser): array
             'upgrade_success',
             (int) $adminUser['id'],
             $adminUser['username'] ?? null,
-            'Completed upgrade to ' . $package['version'] . '. Migrations run: ' . (count($ranMigrations) ? implode(', ', $ranMigrations) : 'none')
+            'Completed upgrade to ' . $package['version'] . '. Migrations run: ' . (count($ranMigrations) ? implode(', ', $ranMigrations) : 'none') . '. Removed stale files: ' . (count($removedFiles) ? implode(', ', $removedFiles) : 'none')
         );
 
         carceris_cleanup_old_upgrade_dirs(3);
@@ -898,6 +1119,7 @@ function carceris_perform_upgrade(array $upload, array $adminUser): array
             'version' => $package['version'],
             'previous_version' => $package['current_version'],
             'migrations' => $ranMigrations,
+            'removed_files' => $removedFiles,
         ];
     } catch (Throwable $exception) {
         carceris_record_upgrade_failure([

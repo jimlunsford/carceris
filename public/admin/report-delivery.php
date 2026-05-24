@@ -109,6 +109,12 @@ if (request_method() === 'POST') {
             $message = carceris_mail_message_from_settings($settings, $subject, $body, 'plain_text', $testRecipient !== '' ? $testRecipient : null);
 
             try {
+                $transport = (string) ($settings['report_mail_transport'] ?? 'manual_only');
+
+                if (!carceris_mail_transport_available($transport, $settings)) {
+                    throw new RuntimeException(carceris_mail_transport_unavailable_message($transport, $settings));
+                }
+
                 carceris_mail_send($settings, $message);
 
                 $deliveryId = carceris_record_mail_test_delivery($settings, $message, $user, 'sent');
@@ -171,9 +177,10 @@ $transportOptions = carceris_report_transport_options();
 $bodyFormatOptions = carceris_report_body_format_options();
 $attachmentFormatOptions = carceris_report_attachment_format_options();
 $deliveries = carceris_recent_report_deliveries(25);
-$previousLogDay = get_or_create_previous_log_day((int) $user['id']);
-$previousEntries = get_entries_for_log_day((int) $previousLogDay['id']);
-$previousEntryCount = count($previousEntries);
+$mailCapabilities = carceris_mail_capabilities($settings);
+$selectedTransport = (string) ($settings['report_mail_transport'] ?? 'manual_only');
+$selectedTransportAvailable = carceris_mail_transport_available($selectedTransport, $settings);
+$selectedTransportWarning = $selectedTransportAvailable ? '' : carceris_mail_transport_unavailable_message($selectedTransport, $settings);
 
 $scheme = is_https_request() ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'example.com';

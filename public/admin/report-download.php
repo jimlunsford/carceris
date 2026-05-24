@@ -35,7 +35,12 @@ if ($logDayId > 0) {
         exit('Daily log not found.');
     }
 } elseif ($log === 'previous') {
-    $logDay = get_or_create_previous_log_day((int) $user['id']);
+    $logDay = get_previous_log_day();
+
+    if (!$logDay) {
+        http_response_code(404);
+        exit('Previous completed daily log not found.');
+    }
 } else {
     http_response_code(400);
     exit('Invalid daily log selection.');

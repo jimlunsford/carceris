@@ -5,16 +5,17 @@
 Admins can:
 
 ```text
+view the live Active Log
 create log entries
 view archives
 print logs
-download logs
-send completed logs
+use Daily Logs downloads and manual sends
 correct and void entries
 manage users
 manage categories
 manage settings
 manage Log Delivery
+run backups and restores
 run upgrades
 view Audit
 export Audit CSV
@@ -27,10 +28,11 @@ view System Status
 Supervisors can:
 
 ```text
+view the live Active Log
 create log entries
 view archives
 print logs
-download logs
+use Daily Logs downloads
 send completed logs when Log Delivery is configured
 correct and void entries
 view and search Audit
@@ -43,9 +45,11 @@ Supervisors cannot:
 manage users
 manage settings
 manage Log Delivery settings
+run backups or restores
 run upgrades
 export Audit CSV
 prune Audit records
+view System Status
 ```
 
 ## Officer
@@ -53,10 +57,10 @@ prune Audit records
 Officers can:
 
 ```text
+view the live Active Log
 create log entries
 view archives
 print logs
-download logs
 ```
 
 ## Viewer
@@ -65,6 +69,14 @@ Viewers can:
 
 ```text
 view archives
-print logs
-download logs
+print dated logs from the Archive
+```
+
+Viewers cannot:
+
+```text
+view the live Active Log
+create log entries
+open the live Print view
+use Daily Logs downloads or sends
 ```

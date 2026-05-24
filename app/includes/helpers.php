@@ -103,12 +103,6 @@ function categories(): array
 }
 
 
-function active_categories(): array
-{
-    return categories();
-}
-
-
 function is_https_request(): bool
 {
     return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -300,10 +294,10 @@ function carceris_role_label(string $role): string
 function carceris_role_description(string $role): string
 {
     return match ($role) {
-        'admin' => 'Full system administration. Can manage users, categories, settings, backups, restores, upgrades, audit, status, logs, and reports.',
-        'supervisor' => 'Operational authority. Can enter logs, correct or void entries, view and print logs, generate daily logs, manually send the previous completed log, and review audit events.',
-        'officer' => 'Standard log user. Can enter log entries, view archives, and print logs.',
-        'viewer' => 'Read-only access. Can view archives and print logs, but cannot create entries or send reports.',
+        'admin' => 'Full system administration. Can manage users, categories, settings, backups, restores, upgrades, audit, status, active logs, archives, and reports.',
+        'supervisor' => 'Operational authority. Can enter active logs, correct or void entries, view and print archives, generate daily logs, manually send completed logs, and review audit events.',
+        'officer' => 'Standard log user. Can enter active log entries, view archives, and print logs.',
+        'viewer' => 'Read-only access. Can view archives and print logs, but cannot view the live Active Log or create entries.',
         default => 'No role description available.',
     };
 }
@@ -312,7 +306,8 @@ function carceris_role_permission_summary(): array
 {
     return [
         'admin' => [
-            'Create log entries',
+            'Create active log entries',
+            'View the live Active Log',
             'View archives and print logs',
             'Generate and manually send daily logs',
             'Correct and void log entries',
@@ -323,7 +318,8 @@ function carceris_role_permission_summary(): array
             'View audit, export audit CSV, prune audit, and view system status',
         ],
         'supervisor' => [
-            'Create log entries',
+            'Create active log entries',
+            'View the live Active Log',
             'View archives and print logs',
             'Generate daily logs',
             'Correct and void log entries',
@@ -331,7 +327,8 @@ function carceris_role_permission_summary(): array
             'View and search audit events',
         ],
         'officer' => [
-            'Create log entries',
+            'Create active log entries',
+            'View the live Active Log',
             'View archives',
             'Print logs',
         ],
@@ -1285,6 +1282,9 @@ function carceris_log_delivery_config_status(?array $settings = null): array
     $enabled = (string) ($settings['report_delivery_enabled'] ?? '0') === '1';
     $transport = (string) ($settings['report_mail_transport'] ?? 'manual_only');
     $hasTransport = $transport !== 'manual_only';
+    $transportAvailable = $hasTransport && function_exists('carceris_mail_transport_available')
+        ? carceris_mail_transport_available($transport, $settings)
+        : $hasTransport;
     $hasRecipients = trim((string) ($settings['report_recipients_to'] ?? '')) !== ''
         || trim((string) ($settings['report_recipients_cc'] ?? '')) !== ''
         || trim((string) ($settings['report_recipients_bcc'] ?? '')) !== '';
@@ -1299,14 +1299,21 @@ function carceris_log_delivery_config_status(?array $settings = null): array
         $issues[] = 'mail transport is set to Manual Export Only';
     }
 
+    if ($hasTransport && !$transportAvailable) {
+        $issues[] = function_exists('carceris_mail_transport_unavailable_message')
+            ? carceris_mail_transport_unavailable_message($transport, $settings)
+            : 'selected mail transport is not available';
+    }
+
     if (!$hasRecipients) {
         $issues[] = 'no recipients are configured';
     }
 
     return [
-        'available' => $enabled && $hasTransport && $hasRecipients,
+        'available' => $enabled && $hasTransport && $transportAvailable && $hasRecipients,
         'enabled' => $enabled,
         'has_transport' => $hasTransport,
+        'transport_available' => $transportAvailable,
         'has_recipients' => $hasRecipients,
         'transport' => $transport,
         'issues' => $issues,

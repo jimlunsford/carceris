@@ -25,6 +25,50 @@ function carceris_mail_settings(): array
     return $settings;
 }
 
+function carceris_mail_capabilities(?array $settings = null): array
+{
+    $settings = $settings ?? carceris_mail_settings();
+    $sendmailPath = trim((string) ($settings['report_sendmail_path'] ?? '/usr/sbin/sendmail'));
+
+    return [
+        'php_mail' => function_exists('mail'),
+        'native_smtp' => function_exists('fsockopen'),
+        'phpmailer' => class_exists('\PHPMailer\PHPMailer\PHPMailer'),
+        'sendmail_proc_open' => function_exists('proc_open'),
+        'sendmail_path_configured' => $sendmailPath !== '',
+        'sendmail_path_executable' => $sendmailPath !== '' && is_executable($sendmailPath),
+    ];
+}
+
+function carceris_mail_transport_available(string $transport, ?array $settings = null): bool
+{
+    $capabilities = carceris_mail_capabilities($settings);
+
+    return match ($transport) {
+        'manual_only' => true,
+        'php_mail' => (bool) $capabilities['php_mail'],
+        'smtp' => (bool) $capabilities['native_smtp'],
+        'smtp_phpmailer' => (bool) $capabilities['phpmailer'],
+        'sendmail' => (bool) $capabilities['sendmail_proc_open'] && (bool) $capabilities['sendmail_path_configured'] && (bool) $capabilities['sendmail_path_executable'],
+        default => false,
+    };
+}
+
+function carceris_mail_transport_unavailable_message(string $transport, ?array $settings = null): string
+{
+    $capabilities = carceris_mail_capabilities($settings);
+
+    return match ($transport) {
+        'php_mail' => 'PHP mail() is not available on this server.',
+        'smtp' => 'Native SMTP requires fsockopen support, which is not available on this server.',
+        'smtp_phpmailer' => 'PHPMailer is not installed. Install phpmailer/phpmailer with Composer or choose another transport.',
+        'sendmail' => !$capabilities['sendmail_proc_open']
+            ? 'Sendmail requires proc_open, which is not available on this server.'
+            : 'Sendmail path is not configured or is not executable.',
+        default => 'Selected mail transport is not available on this server.',
+    };
+}
+
 function carceris_parse_email_list(string $emails): array
 {
     $emails = carceris_normalize_email_list($emails);
@@ -221,6 +265,10 @@ function carceris_mail_send(array $settings, array $message): array
 
 function carceris_mail_send_php_mail(array $message): array
 {
+    if (!function_exists('mail')) {
+        throw new RuntimeException('PHP mail() is not available on this server.');
+    }
+
     $boundary = carceris_mail_has_attachments($message) ? carceris_mail_boundary() : null;
 
     if ($boundary !== null) {
@@ -246,6 +294,10 @@ function carceris_mail_send_php_mail(array $message): array
 
 function carceris_mail_send_sendmail(array $settings, array $message): array
 {
+    if (!function_exists('proc_open')) {
+        throw new RuntimeException('Sendmail transport requires proc_open, which is not available on this server.');
+    }
+
     $path = trim((string) ($settings['report_sendmail_path'] ?? '/usr/sbin/sendmail'));
 
     if ($path === '') {
@@ -359,6 +411,10 @@ function carceris_smtp_escape_data(string $data): string
 
 function carceris_mail_send_smtp(array $settings, array $message): array
 {
+    if (!function_exists('fsockopen')) {
+        throw new RuntimeException('Native SMTP requires fsockopen, which is not available on this server.');
+    }
+
     $host = trim((string) ($settings['report_smtp_host'] ?? ''));
     $port = (int) ($settings['report_smtp_port'] ?? 587);
     $encryption = strtolower(trim((string) ($settings['report_smtp_encryption'] ?? 'tls')));

@@ -201,6 +201,7 @@ function user_can(array $user, string $permission): bool
     $permissions = [
         'admin' => [
             'create_entry',
+            'view_active_log',
             'view_archive',
             'print_log',
             'send_reports',
@@ -215,6 +216,7 @@ function user_can(array $user, string $permission): bool
         ],
         'supervisor' => [
             'create_entry',
+            'view_active_log',
             'view_archive',
             'print_log',
             'send_reports',
@@ -224,6 +226,7 @@ function user_can(array $user, string $permission): bool
         ],
         'officer' => [
             'create_entry',
+            'view_active_log',
             'view_archive',
             'print_log',
         ],

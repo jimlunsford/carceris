@@ -159,7 +159,15 @@ function carceris_create_backup_bundle(array $user): array
     $timestamp = carceris_backup_timestamp();
     $filename = 'carceris-backup-' . $timestamp . '.zip';
     $zipPath = $backupDir . '/' . $filename;
-    $sqlPath = carceris_backup_write_database_sql_file('database-for-bundle');
+    $databaseSql = carceris_backup_database_sql();
+    $databaseHash = hash('sha256', $databaseSql);
+    $sqlPath = $backupDir . '/database-for-bundle-' . $timestamp . '.sql';
+
+    if (file_put_contents($sqlPath, $databaseSql, LOCK_EX) === false) {
+        throw new RuntimeException('Could not write database backup file.');
+    }
+
+    @chmod($sqlPath, 0640);
 
     $manifest = [
         'app' => 'Carceris',
@@ -170,6 +178,7 @@ function carceris_create_backup_bundle(array $user): array
         'created_by_username' => (string) ($user['username'] ?? ''),
         'contents' => [
             'database_sql' => true,
+            'database_sha256' => $databaseHash,
             'config_local_php' => is_file(carceris_project_root() . '/app/config/config.local.php'),
             'storage_files' => is_dir(carceris_project_root() . '/storage'),
         ],
@@ -351,12 +360,26 @@ function carceris_restore_database_from_backup_zip(string $zipPath, array $user)
 
     $manifest = is_string($manifestRaw) ? json_decode($manifestRaw, true) : null;
 
-    if (is_array($manifest) && ($manifest['backup_format'] ?? '') !== 'carceris-backup-v1') {
+    if (!is_array($manifest)) {
+        throw new RuntimeException('Backup ZIP is missing a valid manifest.json.');
+    }
+
+    if (($manifest['backup_format'] ?? '') !== 'carceris-backup-v1') {
         throw new RuntimeException('Backup format is not supported.');
     }
 
-    if (is_array($manifest) && ($manifest['app'] ?? '') !== 'Carceris') {
+    if (($manifest['app'] ?? '') !== 'Carceris') {
         throw new RuntimeException('Backup app marker is not supported.');
+    }
+
+    $expectedDatabaseHash = (string) ($manifest['contents']['database_sha256'] ?? '');
+
+    if (!preg_match('/^[a-f0-9]{64}$/', $expectedDatabaseHash)) {
+        throw new RuntimeException('Backup manifest is missing a database checksum.');
+    }
+
+    if (!hash_equals($expectedDatabaseHash, hash('sha256', (string) $databaseSql))) {
+        throw new RuntimeException('Backup database checksum does not match manifest.');
     }
 
     $preRestorePath = carceris_backup_write_database_sql_file('pre-restore-safety-backup');

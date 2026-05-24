@@ -65,7 +65,7 @@ Do not mark Carceris production-ready until these are complete.
 
 - [ ] Upgrade password confirmation tested
 - [ ] Backup acknowledgement required before upgrade
-- [ ] Deprecated maintenance notes route files are absent
+- [ ] Deprecated route files are absent and no removed workflow is linked in navigation
 - [ ] Backup restore upload size and format checks tested
 
 
@@ -75,3 +75,5 @@ Do not mark Carceris production-ready until these are complete.
 - [ ] Sensitive downloads tested
 - [ ] Upgrade oversized upload rejection tested
 - [ ] Backup temporary working-file cleanup reviewed
+- [ ] Web cron endpoint returns generic errors and detailed failures are reviewed through server logs or Carceris audit/report records
+- [ ] Upgrade package manifest rejection of unexpected extra files has been tested

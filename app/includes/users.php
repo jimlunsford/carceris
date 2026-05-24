@@ -139,3 +139,29 @@ function carceris_reset_user_password(int $id, string $password): void
         'id' => $id,
     ]);
 }
+
+function carceris_verify_user_password(array $user, string $password): bool
+{
+    $stmt = db()->prepare('SELECT password_hash FROM users WHERE id = :id AND is_active = 1 LIMIT 1');
+    $stmt->execute(['id' => (int) ($user['id'] ?? 0)]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        return false;
+    }
+
+    return password_verify($password, (string) $row['password_hash']);
+}
+
+function carceris_change_user_password(int $id, string $password): void
+{
+    if (strlen($password) < 12) {
+        throw new RuntimeException('Password must be at least 12 characters.');
+    }
+
+    $stmt = db()->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :id');
+    $stmt->execute([
+        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'id' => $id,
+    ]);
+}

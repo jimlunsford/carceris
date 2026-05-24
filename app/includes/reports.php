@@ -456,7 +456,11 @@ function carceris_send_log_day_report(array $logDay, ?array $triggeredBy, string
 
 function carceris_send_previous_log_report_now(?array $triggeredBy, string $deliveryType = 'manual'): array
 {
-    $logDay = get_or_create_previous_log_day($triggeredBy ? (int) $triggeredBy['id'] : null);
+    $logDay = get_previous_log_day();
+
+    if (!$logDay) {
+        throw new RuntimeException('Previous completed daily log not found.');
+    }
 
     return carceris_send_log_day_report($logDay, $triggeredBy, $deliveryType);
 }
@@ -495,7 +499,14 @@ function carceris_scheduled_report_due(): array
         ];
     }
 
-    $logDay = get_or_create_previous_log_day(null);
+    $logDay = get_previous_log_day();
+
+    if (!$logDay) {
+        return [
+            'due' => false,
+            'reason' => 'Previous completed daily log not found.',
+        ];
+    }
 
     if (carceris_report_delivery_already_sent((int) $logDay['id'])) {
         return [

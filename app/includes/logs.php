@@ -38,11 +38,28 @@ function previous_operational_window(): array
     return operational_window_for_datetime($currentStart->modify('-1 minute'));
 }
 
-function get_or_create_log_day_for_window(array $window, ?int $openedBy = null): array
+function get_log_day_for_window(array $window): ?array
 {
     $stmt = db()->prepare('SELECT * FROM log_days WHERE operational_date = :operational_date LIMIT 1');
     $stmt->execute(['operational_date' => $window['operational_date']]);
     $logDay = $stmt->fetch();
+
+    return $logDay ?: null;
+}
+
+function get_previous_log_day(): ?array
+{
+    return get_log_day_for_window(previous_operational_window());
+}
+
+function get_current_log_day(): ?array
+{
+    return get_log_day_for_window(current_operational_window());
+}
+
+function get_or_create_log_day_for_window(array $window, ?int $openedBy = null): array
+{
+    $logDay = get_log_day_for_window($window);
 
     if ($logDay) {
         return $logDay;
@@ -267,7 +284,17 @@ function correct_log_entry(int $entryId, array $data, array $user): int
         throw new RuntimeException('Correction reason is required.');
     }
 
-    $eventTime = new DateTimeImmutable((string) $data['event_time']);
+    $eventTimeRaw = trim((string) ($data['event_time'] ?? ''));
+
+    if ($eventTimeRaw === '') {
+        throw new RuntimeException('Corrected event date and time is required.');
+    }
+
+    try {
+        $eventTime = new DateTimeImmutable($eventTimeRaw);
+    } catch (Throwable $exception) {
+        throw new RuntimeException('Invalid corrected event date and time.');
+    }
 
     if ($eventTime > new DateTimeImmutable('now')) {
         throw new RuntimeException('Corrected event time cannot be in the future.');

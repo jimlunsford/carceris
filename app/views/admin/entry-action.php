@@ -40,7 +40,6 @@
             <input type="hidden" name="action" value="correct">
             <input type="hidden" name="entry_id" value="<?= e((string) $entry['id']) ?>">
             <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
-            <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
 
             <label>
                 <span>Actual Event Date and Time</span>
@@ -99,6 +98,7 @@
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="void">
             <input type="hidden" name="entry_id" value="<?= e((string) $entry['id']) ?>">
+            <input type="hidden" name="return_to" value="<?= e($returnTo) ?>">
 
             <label>
                 <span>Void Reason</span>

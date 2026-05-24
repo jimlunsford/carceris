@@ -6,7 +6,7 @@ $baseConfig = [
     'app' => [
         'name' => 'Carceris',
         'tagline' => 'Secure daily logging for correctional facilities.',
-        'version' => '0.6.11',
+        'version' => '0.6.14',
         'timezone' => 'America/Indiana/Indianapolis',
         'session_name' => 'carceris_session',
         'environment_mode' => 'testing',
@@ -32,6 +32,6 @@ if (is_file($localConfigPath)) {
     }
 }
 
-$baseConfig['app']['version'] = '0.6.11';
+$baseConfig['app']['version'] = '0.6.14';
 
 return $baseConfig;

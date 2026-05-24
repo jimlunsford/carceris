@@ -65,3 +65,18 @@ Do not store backup bundles in public web directories, shared personal drives, o
 ## Logout CSRF Protection
 
 Logout uses a POST form with CSRF protection. A GET request to `/logout.php` displays a confirmation screen instead of immediately ending the session.
+
+
+## Mail Credentials and Backups
+
+Carceris stores report-delivery SMTP credentials in the application database so shared-hosting deployments can work without external secret managers. The SMTP password is write-only in the admin interface, but it is still present in database backups.
+
+Treat every Carceris backup as sensitive. Backup bundles may contain operational logs, users, audit records, local configuration, database dumps, and saved mail credentials. Store backups only in approved secure storage.
+
+## Upgrade Package Trust
+
+Only install Carceris upgrade packages from a trusted source. Current release packages include `RELEASE_MANIFEST.json` with file hashes. The in-app upgrader validates the manifest before accepting future packages.
+
+## Cron Error Disclosure
+
+The web cron endpoint returns generic failure text to the browser. Detailed scheduled-report errors are written to the server error log and internal audit/report delivery records where applicable.

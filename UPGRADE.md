@@ -66,3 +66,23 @@ Browser-based upgrades require admin password confirmation and a backup acknowle
 ## Upgrade Upload Limit
 
 Browser-based upgrade ZIP uploads are limited to 100 MB.
+
+
+## What Upgrades Preserve
+
+The browser-based upgrader preserves:
+
+- `app/config/config.local.php`
+- the installed database and all user data
+- `storage/installed.lock`
+- `storage/` runtime files, backups, exports, logs, and uploaded upgrade packages
+
+Upgrade ZIP packages are validated before installation. Current packages include `RELEASE_MANIFEST.json` so future upgrades can verify expected files and hashes.
+
+## Strict Release Manifest Validation
+
+Upgrade ZIP files are rejected when they contain files that are not listed in `RELEASE_MANIFEST.json`. This prevents a package from passing hash checks for known files while also carrying unexpected extra files.
+
+## Removed File Cleanup
+
+The upgrader can remove specific stale files that were present in older releases but removed from current packages. Local config and `storage/` are still preserved.

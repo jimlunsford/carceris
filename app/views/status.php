@@ -144,6 +144,40 @@
 </section>
 
 
+
+<section class="panel <?= $schemaHealth['ok'] ? '' : 'panel-danger' ?>">
+    <h2>Schema Health</h2>
+    <p>
+        <?php if ($schemaHealth['ok']): ?>
+            Required tables and columns are present.
+        <?php else: ?>
+            Required schema items are missing. Run Admin → Upgrade with the latest package before production use.
+        <?php endif; ?>
+    </p>
+
+    <?php if (!$schemaHealth['ok']): ?>
+        <?php if (!empty($schemaHealth['missing_tables'])): ?>
+            <h3>Missing Tables</h3>
+            <ul><?php foreach ($schemaHealth['missing_tables'] as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul>
+        <?php endif; ?>
+        <?php if (!empty($schemaHealth['missing_columns'])): ?>
+            <h3>Missing Columns</h3>
+            <ul><?php foreach ($schemaHealth['missing_columns'] as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul>
+        <?php endif; ?>
+    <?php endif; ?>
+</section>
+
+<section class="panel">
+    <h2>Mail Transport Capabilities</h2>
+    <div class="status-list">
+        <div class="status-list-row"><span>PHP mail()</span><strong class="<?= $mailCapabilities['php_mail'] ? 'status-good' : 'status-bad' ?>"><?= $mailCapabilities['php_mail'] ? 'Available' : 'Unavailable' ?></strong></div>
+        <div class="status-list-row"><span>Native SMTP socket support</span><strong class="<?= $mailCapabilities['native_smtp'] ? 'status-good' : 'status-bad' ?>"><?= $mailCapabilities['native_smtp'] ? 'Available' : 'Unavailable' ?></strong></div>
+        <div class="status-list-row"><span>PHPMailer library</span><strong class="<?= $mailCapabilities['phpmailer'] ? 'status-good' : 'status-warn' ?>"><?= $mailCapabilities['phpmailer'] ? 'Installed' : 'Not installed' ?></strong></div>
+        <div class="status-list-row"><span>Sendmail proc_open</span><strong class="<?= $mailCapabilities['sendmail_proc_open'] ? 'status-good' : 'status-bad' ?>"><?= $mailCapabilities['sendmail_proc_open'] ? 'Available' : 'Unavailable' ?></strong></div>
+        <div class="status-list-row"><span>Sendmail path executable</span><strong class="<?= $mailCapabilities['sendmail_path_executable'] ? 'status-good' : 'status-bad' ?>"><?= $mailCapabilities['sendmail_path_executable'] ? 'Executable' : 'Not executable' ?></strong></div>
+    </div>
+</section>
+
 <section class="panel <?= $productionReadiness['ready'] ? '' : 'panel-danger' ?>">
     <h2>Production Readiness</h2>
     <p>

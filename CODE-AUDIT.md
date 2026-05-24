@@ -2,7 +2,7 @@
 
 ## Version
 
-Carceris v0.6.11
+Carceris v0.6.14
 
 ## Scope
 
@@ -107,7 +107,7 @@ audit events
 
 ### Deprecated Routes
 
-The old maintenance-notes route files were removed before GitHub packaging.
+Removed route files are absent from the active package.
 
 Generated route-audit JSON output was also removed. The route-audit tool remains available:
 
@@ -140,7 +140,7 @@ real-user pilot workflow
 
 ## Production Verdict
 
-Carceris v0.6.11 is suitable for public GitHub release as an open-source release candidate for internal facility deployment.
+Carceris v0.6.14 is suitable for public GitHub release as an open-source release candidate for internal facility deployment.
 
 It should not be represented as independently certified, enterprise-hardened, or public-internet safe.
 
@@ -154,6 +154,6 @@ Confirmed:
 ```text
 README.md uses the current version
 UPGRADE.md uses current upgrade guardrail language
-PRODUCTION-CHECKLIST.md reflects that deprecated maintenance-notes route files are absent
+PRODUCTION-CHECKLIST.md reflects that deprecated route files are absent
 release notes describe the current package
 ```

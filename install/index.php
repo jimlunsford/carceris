@@ -38,6 +38,38 @@ function write_config(string $path, array $config): void {
     }
 }
 
+function migration_version_from_file(string $filename): string {
+    return preg_match('/^(\d+\.\d+\.\d+)-/', basename($filename), $matches) ? $matches[1] : '0.0.0';
+}
+
+function baseline_migrations(PDO $pdo, string $root, string $currentVersion, ?int $adminId = null): void {
+    $migrationDir = $root . '/database/migrations';
+    $files = glob($migrationDir . '/*.sql') ?: [];
+    usort($files, static fn($a, $b) => strnatcasecmp(basename($a), basename($b)));
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO schema_migrations (version, migration_file, checksum, executed_by, status)
+         VALUES (:version, :migration_file, :checksum, :executed_by, "baseline")
+         ON DUPLICATE KEY UPDATE checksum = VALUES(checksum), status = "baseline"'
+    );
+
+    foreach ($files as $path) {
+        $file = basename($path);
+        $version = migration_version_from_file($file);
+
+        if (version_compare($version, $currentVersion, '>')) {
+            continue;
+        }
+
+        $stmt->execute([
+            'version' => $version,
+            'migration_file' => $file,
+            'checksum' => hash_file('sha256', $path) ?: hash('sha256', $file),
+            'executed_by' => $adminId,
+        ]);
+    }
+}
+
 $isInstalled = installed($configLocalPath, $lockPath);
 $errors = [];
 $success = false;
@@ -103,12 +135,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isInstalled) {
 
             $insert = $pdo->prepare('INSERT INTO users (username, password_hash, display_name, role, is_active) VALUES (:u, :p, :d, "admin", 1)');
             $insert->execute(['u' => $adminUser, 'p' => password_hash($adminPass, PASSWORD_DEFAULT), 'd' => $adminName]);
+            $adminId = (int) $pdo->lastInsertId();
+
+            baseline_migrations($pdo, $root, '0.6.14', $adminId);
 
             write_config($configLocalPath, [
                 'app' => [
                     'name' => 'Carceris',
                     'tagline' => 'Secure daily logging for correctional facilities.',
-                    'version' => '0.6.11',
+                    'version' => '0.6.14',
                     'timezone' => $timezone,
                     'session_name' => 'carceris_session',
                     'environment_mode' => $environmentMode,
